@@ -166,6 +166,52 @@ def add_article():
         return redirect(url_for('dashboard'))
     return render_template('add_article.html', form=form)
 
+# Edit article
+@app.route('/edit_article/<string:id_number>', methods=['GET', 'POST'])
+@is_logged_in
+def edit_article(id_number):
+    # Create cursor
+    cur = mysql.connection.cursor()
+    # Get article by id
+    cur.execute("SELECT * FROM articles WHERE id=%s", [id_number])
+    one_article = cur.fetchone()
+    # Get form
+    form = ArticleForm(request.form)
+    # Populate article form fields
+    form.title.data = one_article['title']
+    form.body.data = one_article['body']
+    if request.method == 'POST' and form.validate():
+        title = request.form['title']
+        body = request.form['body']
+        # Create cursor
+        cur = mysql.connection.cursor()
+        # Execute query
+        cur.execute("UPDATE articles SET title=%s, body=%s WHERE id=%s", (title, body, id_number))
+        # Commit to DB
+        mysql.connection.commit()
+        # Close connection
+        cur.close()
+        # Message for user
+        flash('Article updated.', 'success')
+        return redirect(url_for('dashboard'))
+    return render_template('add_article.html', form=form)
+
+# Delete article
+@app.route('/delete_article/<string:id_number>', methods=['POST'])
+@is_logged_in
+def delete_article(id_number):
+    # Create cursor
+    cur = mysql.connection.cursor()
+    # Execute query
+    cur.execute("DELETE FROM articles WHERE id=%s", [id_number])
+    # Commit to DB
+    mysql.connection.commit()
+    # Close connection
+    cur.close()
+    # Message for user
+    flash('Article deleted.', 'success')
+    return redirect(url_for('dashboard'))
+
 # Register form class
 class RegisterForm(Form):
     name = StringField('Name', validators=[DataRequired("Please enter your name."), Length(min=1, max=50)])
